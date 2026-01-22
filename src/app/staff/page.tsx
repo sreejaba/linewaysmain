@@ -1,0 +1,151 @@
+"use client";
+
+import DashboardLayout from "@/components/DashboardLayout";
+import { useAuth } from "@/lib/AuthContext";
+import { ClipboardList, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { db } from "@/lib/firebase";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { format } from "date-fns";
+import { Timestamp } from "firebase/firestore";
+
+interface LeaveRequest {
+    id: string;
+    userId: string;
+    type: string;
+    status: "Pending" | "Approved" | "Rejected";
+    fromDate: string;
+    toDate: string;
+    createdAt?: Timestamp;
+}
+
+export default function StaffDashboard() {
+    const { user } = useAuth();
+    const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [stats, setStats] = useState({
+        total: 0,
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+    });
+
+    useEffect(() => {
+        if (!user || !db) return;
+
+        const q = query(
+            collection(db, "leaves"),
+            where("userId", "==", user.uid)
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const leavesData = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })) as LeaveRequest[];
+
+            leavesData.sort((a, b) => {
+                const timeA = a.createdAt?.seconds || 0;
+                const timeB = b.createdAt?.seconds || 0;
+                return timeB - timeA;
+            });
+
+            setLeaves(leavesData.slice(0, 5));
+
+            setStats({
+                total: leavesData.length,
+                pending: leavesData.filter(l => l.status === "Pending").length,
+                approved: leavesData.filter(l => l.status === "Approved").length,
+                rejected: leavesData.filter(l => l.status === "Rejected").length,
+            });
+            setLoading(false);
+            setError(null);
+        }, (err) => {
+            console.error("Firestore Error:", err);
+            setError(err.message);
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [user]);
+
+    const statCards = [
+        { name: "Total Requests", value: stats.total, icon: ClipboardList, color: "text-blue-600", bg: "bg-blue-100" },
+        { name: "Pending", value: stats.pending, icon: Clock, color: "text-yellow-600", bg: "bg-yellow-100" },
+        { name: "Approved", value: stats.approved, icon: CheckCircle, color: "text-green-600", bg: "bg-green-100" },
+        { name: "Rejected", value: stats.rejected, icon: XCircle, color: "text-red-600", bg: "bg-red-100" },
+    ];
+
+    return (
+        <DashboardLayout allowedRole="staff">
+            <div className="space-y-6">
+                <div>
+                    <h1 className="text-xl md:text-2xl font-bold text-gray-900">Welcome back!</h1>
+                    <p className="text-sm text-gray-500">Here's an overview of your leave status.</p>
+                </div>
+
+                {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-center gap-3">
+                        <AlertCircle className="h-5 w-5 shrink-0" />
+                        <p className="text-sm">Connection Error: {error}</p>
+                    </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 md:gap-6">
+                    {statCards.map((stat) => (
+                        <div key={stat.name} className="flex flex-col md:flex-row items-center rounded-xl bg-white p-4 md:p-6 shadow-sm border border-gray-100 gap-2 md:gap-4">
+                            <div className={`flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-lg shrink-0 ${stat.bg} ${stat.color}`}>
+                                <stat.icon className="h-5 w-5 md:h-6 md:w-6" />
+                            </div>
+                            <div className="text-center md:text-left overflow-hidden w-full">
+                                <p className="text-[10px] md:text-sm font-medium text-gray-500 uppercase tracking-tight truncate">{stat.name}</p>
+                                <p className="text-lg md:text-2xl font-bold text-gray-900 leading-tight">{stat.value}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="rounded-xl bg-white p-4 md:p-6 shadow-sm border border-gray-100">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
+                    {loading ? (
+                        <div className="text-center py-12 text-gray-400">Loading activity...</div>
+                    ) : leaves.length === 0 ? (
+                        <div className="text-center py-12 text-gray-400 italic">
+                            No leave requests found.
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+                            <table className="w-full text-left border-collapse min-w-[300px]">
+                                <thead className="bg-gray-50 border-b border-gray-100">
+                                    <tr>
+                                        <th className="px-4 py-2 text-xs font-semibold text-gray-600 uppercase">Type</th>
+                                        <th className="px-4 py-2 text-xs font-semibold text-gray-600 uppercase">Dates</th>
+                                        <th className="px-4 py-2 text-xs font-semibold text-gray-600 uppercase">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {leaves.map((leave) => (
+                                        <tr key={leave.id}>
+                                            <td className="px-4 py-3 text-sm font-medium text-gray-900">{leave.type}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-600">
+                                                {leave.fromDate && format(new Date(leave.fromDate), "MMM dd")}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span className={`px-2 py-0.5 rounded text-[10px] md:text-xs font-medium ${leave.status === "Approved" ? "bg-green-100 text-green-700" :
+                                                    leave.status === "Rejected" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"
+                                                    }`}>
+                                                    {leave.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </DashboardLayout>
+    );
+}
