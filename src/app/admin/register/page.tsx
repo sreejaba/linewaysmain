@@ -35,7 +35,7 @@ export default function RegisterStaffPage() {
             await setDoc(doc(db, "users", userCredential.user.uid), {
                 email,
                 displayName,
-                role: "staff",
+                role: designation === "Principal" ? "princi" : "staff",
 
                 // Save new details
                 salutation,
