@@ -77,13 +77,7 @@ export default function PrincipalDashboard() {
                             <Calendar className="h-5 w-5 shrink-0" />
                             Review Requests
                         </Link>
-                        <Link
-                            href="/principal/register"
-                            className="flex items-center justify-center gap-3 p-4 rounded-xl border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors font-semibold shadow-sm text-sm md:text-base"
-                        >
-                            <UserPlus className="h-5 w-5 shrink-0" />
-                            Add Staff Member
-                        </Link>
+
                     </div>
                 </div>
             </div>

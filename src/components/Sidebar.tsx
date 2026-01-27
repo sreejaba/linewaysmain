@@ -76,9 +76,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             ]
         },
         { name: "Staffs", href: role === "princi" ? "/principal/staffs" : role === "dir" ? "/director/staffs" : "/admin/staffs", icon: ClipboardList },
-        { name: "Register Staff", href: role === "princi" ? "/principal/register" : role === "dir" ? "/director/register" : "/admin/register", icon: UserPlus },
-        { name: "Register Multiple Staffs", href: role === "princi" ? "/principal/register-multi" : role === "dir" ? "/director/register-multi" : "/admin/register-multi", icon: UserPlus },
     ];
+
+    if (role === "admin") {
+        adminLinks.push(
+            { name: "Register Staff", href: "/admin/register", icon: UserPlus },
+            { name: "Register Multiple Staffs", href: "/admin/register-multi", icon: UserPlus }
+        );
+    }
 
     const links = (role === "admin" || role === "dir" || role === "princi") ? adminLinks : staffLinks;
 
