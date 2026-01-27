@@ -13,7 +13,7 @@ export default function LeaveRequestPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
-        type: "Sick",
+        type: "Casual Leave",
         fromDate: "",
         toDate: "",
         session: "Full Day",
@@ -88,8 +88,11 @@ export default function LeaveRequestPage() {
                                 value={formData.type}
                                 onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                             >
-                                <option>Sick</option>
-                                <option>Casual</option>
+                                <option>Casual Leave</option>
+                                <option>Duty Leave</option>
+                                <option>Vacation Leave</option>
+                                <option>Maternity Leave</option>
+                                <option>Compensatory Leave</option>
                             </select>
                         </div>
 

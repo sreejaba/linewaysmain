@@ -14,7 +14,7 @@ interface LeaveRequest {
     id: string;
     userId: string;
     type: string;
-    status: "Pending" | "Approved" | "Rejected";
+    status: "Pending" | "Approved" | "Rejected" | "Recommended";
     fromDate: string;
     toDate: string;
     createdAt?: Timestamp;
@@ -81,7 +81,7 @@ function StaffDashboardContent() {
 
             setStats({
                 total: leavesData.length,
-                pending: leavesData.filter(l => l.status === "Pending").length,
+                pending: leavesData.filter(l => l.status === "Pending" || l.status === "Recommended").length,
                 approved: leavesData.filter(l => l.status === "Approved").length,
                 rejected: leavesData.filter(l => l.status === "Rejected").length,
             });
@@ -176,7 +176,9 @@ function StaffDashboardContent() {
                                             </td>
                                             <td className="px-4 py-3">
                                                 <span className={`px-2 py-0.5 rounded text-[10px] md:text-xs font-medium ${leave.status === "Approved" ? "bg-green-100 text-green-700" :
-                                                    leave.status === "Rejected" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"
+                                                    leave.status === "Rejected" ? "bg-red-100 text-red-700" :
+                                                        leave.status === "Recommended" ? "bg-blue-100 text-blue-700" :
+                                                            "bg-yellow-100 text-yellow-700"
                                                     }`}>
                                                     {leave.status}
                                                 </span>

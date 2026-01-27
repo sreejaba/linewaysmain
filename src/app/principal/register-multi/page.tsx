@@ -133,7 +133,7 @@ export default function RegisterMultiStaffPage() {
     };
 
     return (
-        <DashboardLayout allowedRole="admin">
+        <DashboardLayout allowedRole="princi">
             <div className="max-w-4xl mx-auto pb-10 relative">
                 {showSuccessPopup && (
                     <div className={`fixed top-24 right-5 bg-white border shadow-xl rounded-xl p-4 flex items-center gap-3 animate-in slide-in-from-right-5 fade-in duration-300 z-50 max-w-sm ${duplicatesCount > 0 ? 'border-orange-100' : 'border-green-100'}`}>

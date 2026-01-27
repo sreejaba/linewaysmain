@@ -6,14 +6,25 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Function to get the user's role from their document
-    function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    // Function to get the user's role from their document (safely)
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    // Function to check if user is an admin
+    // Function to check if user is an admin or director or principal
     function isAdmin() {
-      return isAuthenticated() && getUserRole() == 'admin';
+      return isAuthenticated() && (
+        getUserData().role == 'admin' || 
+        getUserData().role == 'dir' ||
+        getUserData().role == 'princi'
+      );
+    }
+
+    function isStaff() {
+       return isAuthenticated() && (
+        getUserData().role == 'staff' || 
+        getUserData().role == 'princi'
+      );
     }
 
     // Rules for the 'users' collection

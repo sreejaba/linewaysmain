@@ -18,7 +18,10 @@ export default function LoginPage() {
 
     useEffect(() => {
         if (!authLoading && user && role) {
-            router.push(role === "admin" ? "/admin" : "/staff");
+            if (role === "admin") router.push("/admin");
+            else if (role === "dir") router.push("/director");
+            else if (role === "princi") router.push("/principal");
+            else router.push("/staff");
         }
     }, [user, role, authLoading, router]);
 
@@ -36,7 +39,10 @@ export default function LoginPage() {
 
             if (userDoc.exists()) {
                 const userRole = userDoc.data().role;
-                router.push(userRole === "admin" ? "/admin" : "/staff");
+                if (userRole === "admin") router.push("/admin");
+                else if (userRole === "dir") router.push("/director");
+                else if (userRole === "princi") router.push("/principal");
+                else router.push("/staff");
             } else {
                 setError("User record not found in database.");
             }

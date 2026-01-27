@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
     LayoutDashboard,
     FilePlus,
@@ -38,6 +38,7 @@ interface NavLink {
 
 export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     const pathname = usePathname();
+    const router = useRouter();
     const { role, user, userData } = useAuth();
     const [mounted, setMounted] = useState(false);
 
@@ -45,7 +46,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         setMounted(true);
     }, []);
 
-    const handleLogout = () => signOut(auth);
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+            router.push("/login");
+        } catch (error) {
+            console.error("Logout error:", error);
+        }
+    };
 
     const staffLinks: NavLink[] = [
         { name: "Dashboard", href: "/staff", icon: LayoutDashboard },
@@ -55,24 +63,24 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     ];
 
     const adminLinks: NavLink[] = [
-        { name: "Admin Dashboard", href: "/admin", icon: LayoutDashboard },
+        { name: role === "princi" ? "Principal Dashboard" : role === "dir" ? "Director Dashboard" : "Admin Dashboard", href: role === "princi" ? "/principal" : role === "dir" ? "/director" : "/admin", icon: LayoutDashboard },
         {
             name: "Manage Requests",
-            href: "/admin/requests",
+            href: role === "princi" ? "/principal/requests" : role === "dir" ? "/director/requests" : "/admin/requests",
             icon: Calendar,
             subItems: [
-                { name: "Pending", href: "/admin/requests?status=Pending" },
-                { name: "Approved", href: "/admin/requests?status=Approved" },
-                { name: "Rejected", href: "/admin/requests?status=Rejected" },
-                { name: "All", href: "/admin/requests?status=All" },
+                { name: "Pending", href: role === "princi" ? "/principal/requests?status=Pending" : role === "dir" ? "/director/requests?status=Pending" : "/admin/requests?status=Pending" },
+                { name: "Approved", href: role === "princi" ? "/principal/requests?status=Approved" : role === "dir" ? "/director/requests?status=Approved" : "/admin/requests?status=Approved" },
+                { name: "Rejected", href: role === "princi" ? "/principal/requests?status=Rejected" : role === "dir" ? "/director/requests?status=Rejected" : "/admin/requests?status=Rejected" },
+                { name: "All", href: role === "princi" ? "/principal/requests?status=All" : role === "dir" ? "/director/requests?status=All" : "/admin/requests?status=All" },
             ]
         },
-        { name: "Staffs", href: "/admin/staffs", icon: ClipboardList },
-        { name: "Register Staff", href: "/admin/register", icon: UserPlus },
-        { name: "Register Multiple Staffs", href: "/admin/register-multi", icon: UserPlus },
+        { name: "Staffs", href: role === "princi" ? "/principal/staffs" : role === "dir" ? "/director/staffs" : "/admin/staffs", icon: ClipboardList },
+        { name: "Register Staff", href: role === "princi" ? "/principal/register" : role === "dir" ? "/director/register" : "/admin/register", icon: UserPlus },
+        { name: "Register Multiple Staffs", href: role === "princi" ? "/principal/register-multi" : role === "dir" ? "/director/register-multi" : "/admin/register-multi", icon: UserPlus },
     ];
 
-    const links = role === "admin" ? adminLinks : staffLinks;
+    const links = (role === "admin" || role === "dir" || role === "princi") ? adminLinks : staffLinks;
 
     return (
         <>
@@ -131,7 +139,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                                 onClick={() => setIsOpen(false)}
                                                 className={cn(
                                                     "px-4 py-1.5 text-xs font-medium rounded-r-lg transition-colors border-l-2",
-                                                    (mounted && (pathname + window.location.search === sub.href)) || (pathname === "/admin/requests" && sub.name === "Pending" && (mounted && !window.location.search))
+                                                    (mounted && (pathname + window.location.search === sub.href)) || ((pathname === "/admin/requests" || pathname === "/director/requests" || pathname === "/principal/requests") && sub.name === "Pending" && (mounted && !window.location.search))
                                                         ? "text-blue-700 bg-blue-50/50 border-blue-600"
                                                         : "text-gray-500 hover:text-gray-900 hover:bg-gray-50 border-transparent"
                                                 )}

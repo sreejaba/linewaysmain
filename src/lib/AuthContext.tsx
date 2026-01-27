@@ -14,7 +14,7 @@ interface UserData {
 
 interface AuthContextType {
     user: User | null;
-    role: "admin" | "staff" | null;
+    role: "admin" | "staff" | "princi" | "dir" | null;
     userData: UserData | null;
     loading: boolean;
 }
@@ -28,7 +28,7 @@ const AuthContext = createContext<AuthContextType>({
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
-    const [role, setRole] = useState<"admin" | "staff" | null>(null);
+    const [role, setRole] = useState<"admin" | "staff" | "princi" | "dir" | null>(null);
     const [userData, setUserData] = useState<UserData | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
@@ -40,25 +40,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                setUser(user);
-                // Fetch role from Firestore
-                const userDoc = await getDoc(doc(db, "users", user.uid));
-                if (userDoc.exists()) {
-                    const data = userDoc.data();
-                    setRole(data.role);
-                    setUserData({
-                        name: data.name || data.displayName || user.displayName,
-                        designation: data.designation,
-                        department: data.department
-                    });
+            try {
+                if (user) {
+                    setUser(user);
+                    // Fetch role from Firestore
+                    try {
+                        if (db) {
+                            const userDoc = await getDoc(doc(db, "users", user.uid));
+                            if (userDoc.exists()) {
+                                const data = userDoc.data();
+                                setRole(data.role);
+                                setUserData({
+                                    name: data.name || data.displayName || user.displayName,
+                                    designation: data.designation,
+                                    department: data.department
+                                });
+                            }
+                        } else {
+                            console.warn("Firestore is not initialized.");
+                        }
+                    } catch (error) {
+                        console.error("Error fetching user data:", error);
+                    }
+                } else {
+                    setUser(null);
+                    setRole(null);
+                    setUserData(null);
                 }
-            } else {
-                setUser(null);
-                setRole(null);
-                setUserData(null);
+            } catch (error) {
+                console.error("Auth state change error:", error);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         });
 
         return () => unsubscribe();

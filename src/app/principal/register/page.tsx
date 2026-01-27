@@ -72,7 +72,7 @@ export default function RegisterStaffPage() {
     };
 
     return (
-        <DashboardLayout allowedRole="admin">
+        <DashboardLayout allowedRole="princi">
             <div className="max-w-2xl mx-auto pb-10">
                 <div className="mb-6 px-1">
                     <h1 className="text-xl md:text-2xl font-bold text-gray-900">Register Staff</h1>

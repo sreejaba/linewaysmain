@@ -43,7 +43,7 @@ function AdminRequestManagerContent() {
     // Fetch Staff Details
     useEffect(() => {
         if (!db) return;
-        const q = query(collection(db, "users"), where("role", "in", ["staff", "princi", "dir"])); // Include dir in mapping if needed
+        const q = query(collection(db, "users"), where("role", "in", ["staff", "princi"]));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const mapping: Record<string, any> = {};
             snapshot.docs.forEach(doc => {
@@ -79,7 +79,7 @@ function AdminRequestManagerContent() {
 
     useEffect(() => {
         if (!db) return;
-        const q = query(collection(db, "leaves"));
+        const q = query(collection(db, "leaves"), where("type", "==", "Compensatory Leave"));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const leavesData = snapshot.docs.map(doc => ({
@@ -105,7 +105,7 @@ function AdminRequestManagerContent() {
         return () => unsubscribe();
     }, []);
 
-    const handleAction = async (id: string, status: "Approved" | "Rejected") => {
+    const handleAction = async (id: string, status: "Approved" | "Rejected" | "Recommended") => {
         try {
             const leaveRef = doc(db, "leaves", id);
             await updateDoc(leaveRef, { status });
@@ -115,19 +115,31 @@ function AdminRequestManagerContent() {
         }
     };
 
-    const filteredLeaves = leaves.filter(l => {
-        if (filter === "All") return true;
-        if (filter === "Pending") return l.status === "Pending" || l.status === "Recommended";
-        return l.status === filter;
-    });
+    const filteredLeaves = filter === "All"
+        ? leaves
+        : leaves.filter(l => l.status === filter);
 
     return (
-        <DashboardLayout allowedRole="admin">
+        <DashboardLayout allowedRole="dir">
             <div className="space-y-6">
                 <div className="flex flex-col gap-4">
                     <div>
                         <h1 className="text-xl md:text-2xl font-bold text-gray-900">Manage Requests</h1>
                         <p className="text-sm text-gray-500 text-pretty">Review and respond to leave applications below.</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {(["All", "Pending", "Recommended", "Approved", "Rejected"] as const).map((status) => (
+                            <button
+                                key={status}
+                                onClick={() => setFilter(status)}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === status
+                                    ? "bg-blue-600 text-white shadow-md shadow-blue-200"
+                                    : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                                    }`}
+                            >
+                                {status}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
@@ -180,13 +192,13 @@ function AdminRequestManagerContent() {
                                     <div className="text-xs text-gray-400">
                                         {leave.fromDate && format(new Date(leave.fromDate), "MMM dd")} - {leave.toDate && format(new Date(leave.toDate), "MMM dd")}
                                     </div>
-                                    {(leave.status === "Pending" || leave.status === "Recommended") && (
+                                    {leave.status === "Pending" && (
                                         <div className="flex gap-2 pt-2 border-t border-gray-100">
                                             <button
-                                                onClick={() => handleAction(leave.id, "Approved")}
-                                                className="flex-1 py-1.5 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700 transition-colors"
+                                                onClick={() => handleAction(leave.id, "Recommended")}
+                                                className="flex-1 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
                                             >
-                                                Approve
+                                                Recommend
                                             </button>
                                             <button
                                                 onClick={() => handleAction(leave.id, "Rejected")}
@@ -267,12 +279,12 @@ function AdminRequestManagerContent() {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex justify-end gap-2">
-                                                        {(leave.status === "Pending" || leave.status === "Recommended") ? (
+                                                        {leave.status === "Pending" ? (
                                                             <>
                                                                 <button
-                                                                    onClick={() => handleAction(leave.id, "Approved")}
-                                                                    className="p-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
-                                                                    title="Approve"
+                                                                    onClick={() => handleAction(leave.id, "Recommended")}
+                                                                    className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                                                                    title="Recommend"
                                                                 >
                                                                     <Check className="h-5 w-5" />
                                                                 </button>

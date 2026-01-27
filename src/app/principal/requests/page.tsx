@@ -116,13 +116,16 @@ function AdminRequestManagerContent() {
     };
 
     const filteredLeaves = leaves.filter(l => {
+        // Hide Pending Compensatory Leaves (waiting for Director recommendation)
+        if (l.type === "Compensatory Leave" && l.status === "Pending") return false;
+
         if (filter === "All") return true;
         if (filter === "Pending") return l.status === "Pending" || l.status === "Recommended";
         return l.status === filter;
     });
 
     return (
-        <DashboardLayout allowedRole="admin">
+        <DashboardLayout allowedRole="princi">
             <div className="space-y-6">
                 <div className="flex flex-col gap-4">
                     <div>
