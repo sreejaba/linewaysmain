@@ -71,14 +71,14 @@ export default function DirectorDashboard() {
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <Link
-                            href="/admin/requests"
+                            href="/director/requests"
                             className="flex items-center justify-center gap-3 p-4 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors font-semibold shadow-sm text-sm md:text-base"
                         >
                             <Calendar className="h-5 w-5 shrink-0" />
                             Review Requests
                         </Link>
                         <Link
-                            href="/admin/register"
+                            href="/director/register"
                             className="flex items-center justify-center gap-3 p-4 rounded-xl border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors font-semibold shadow-sm text-sm md:text-base"
                         >
                             <UserPlus className="h-5 w-5 shrink-0" />

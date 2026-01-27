@@ -7,7 +7,7 @@ import { collection, query, where, onSnapshot, getDocs } from "firebase/firestor
 import { Users, ClipboardList, Clock, CheckCircle, Calendar, UserPlus } from "lucide-react";
 import Link from "next/link";
 
-export default function AdminDashboard() {
+export default function PrincipalDashboard() {
     const [stats, setStats] = useState({
         totalStaff: 0,
         pendingLeaves: 0,
@@ -71,14 +71,14 @@ export default function AdminDashboard() {
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <Link
-                            href="/admin/requests"
+                            href="/principal/requests"
                             className="flex items-center justify-center gap-3 p-4 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors font-semibold shadow-sm text-sm md:text-base"
                         >
                             <Calendar className="h-5 w-5 shrink-0" />
                             Review Requests
                         </Link>
                         <Link
-                            href="/admin/register"
+                            href="/principal/register"
                             className="flex items-center justify-center gap-3 p-4 rounded-xl border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors font-semibold shadow-sm text-sm md:text-base"
                         >
                             <UserPlus className="h-5 w-5 shrink-0" />
