@@ -34,7 +34,7 @@ export default function AdminStaffOverview() {
     useEffect(() => {
         if (!db) return;
         // 1. Fetch all staff members
-        const staffQuery = query(collection(db, "users"), where("role", "in", ["staff", "princi"]));
+        const staffQuery = query(collection(db, "users"), where("role", "in", ["staff", "princi", "dir"]));
 
         // 2. Fetch all approved leaves for the current year
         const currentYear = new Date().getFullYear();

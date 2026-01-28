@@ -70,6 +70,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             icon: Calendar,
             subItems: [
                 { name: "Pending", href: role === "princi" ? "/principal/requests?status=Pending" : role === "dir" ? "/director/requests?status=Pending" : "/admin/requests?status=Pending" },
+                { name: "Recommended", href: role === "princi" ? "/principal/requests?status=Recommended" : role === "dir" ? "/director/requests?status=Recommended" : "/admin/requests?status=Recommended" },
                 { name: "Approved", href: role === "princi" ? "/principal/requests?status=Approved" : role === "dir" ? "/director/requests?status=Approved" : "/admin/requests?status=Approved" },
                 { name: "Rejected", href: role === "princi" ? "/principal/requests?status=Rejected" : role === "dir" ? "/director/requests?status=Rejected" : "/admin/requests?status=Rejected" },
                 { name: "All", href: role === "princi" ? "/principal/requests?status=All" : role === "dir" ? "/director/requests?status=All" : "/admin/requests?status=All" },
