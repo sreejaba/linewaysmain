@@ -8,6 +8,7 @@ import { format, startOfYear, endOfYear } from "date-fns";
 import { Check, X, AlertCircle, CalendarClock } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Timestamp } from "firebase/firestore";
+import { LEAVE_LIMITS, LeaveType } from "@/lib/constants";
 
 interface LeaveRequest {
     id: string;
@@ -27,7 +28,7 @@ interface LeaveRequest {
 function AdminRequestManagerContent() {
     const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
     const [staffMap, setStaffMap] = useState<Record<string, any>>({});
-    const [leaveUsageMap, setLeaveUsageMap] = useState<Record<string, number>>({});
+    const [leaveUsageMap, setLeaveUsageMap] = useState<Record<string, Record<string, number>>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const searchParams = useSearchParams();
@@ -64,11 +65,12 @@ function AdminRequestManagerContent() {
         const q = query(collection(db, "leaves"), where("status", "==", "Approved"));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const usage: Record<string, number> = {};
+            const usage: Record<string, Record<string, number>> = {};
             snapshot.docs.forEach(doc => {
                 const data = doc.data();
                 if (data.fromDate >= yearStart && data.fromDate <= yearEnd) {
-                    usage[data.userId] = (usage[data.userId] || 0) + (data.leaveValue || 0);
+                    if (!usage[data.userId]) usage[data.userId] = {};
+                    usage[data.userId][data.type] = (usage[data.userId][data.type] || 0) + (data.leaveValue || 0);
                 }
             });
             setLeaveUsageMap(usage);
@@ -161,7 +163,9 @@ function AdminRequestManagerContent() {
                                             </p>
                                             <div className="flex items-center gap-1 mt-1 text-xs text-blue-600 font-medium">
                                                 <CalendarClock className="h-3 w-3" />
-                                                <span>Used this year: {leavesUsed} days</span>
+                                                <span>
+                                                    Balance: {Math.max(0, (LEAVE_LIMITS[leave.type as LeaveType] || 0) - (leaveUsageMap[leave.userId]?.[leave.type] || 0))} / {LEAVE_LIMITS[leave.type as LeaveType] || "-"}
+                                                </span>
                                             </div>
                                         </div>
                                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${leave.status === "Approved" ? "bg-green-100 text-green-700 border-green-200" :
@@ -208,7 +212,7 @@ function AdminRequestManagerContent() {
                             <thead className="bg-gray-50 border-b border-gray-100">
                                 <tr>
                                     <th className="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider text-nowrap">Staff Details</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider text-nowrap text-center">Leaves Availed</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider text-nowrap text-center">Remaining Balance</th>
                                     <th className="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider text-nowrap">Type & Duration</th>
                                     <th className="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider text-nowrap">Reason & Details</th>
                                     <th className="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider text-nowrap">Dates</th>
@@ -238,8 +242,11 @@ function AdminRequestManagerContent() {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-                                                        {leavesUsed} Days
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${Math.max(0, (LEAVE_LIMITS[leave.type as LeaveType] || 0) - (leaveUsageMap[leave.userId]?.[leave.type] || 0)) === 0
+                                                            ? 'bg-red-100 text-red-700'
+                                                            : 'bg-blue-50 text-blue-700'
+                                                        }`}>
+                                                        {Math.max(0, (LEAVE_LIMITS[leave.type as LeaveType] || 0) - (leaveUsageMap[leave.userId]?.[leave.type] || 0))} left
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">

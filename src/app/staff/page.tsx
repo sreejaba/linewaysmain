@@ -9,6 +9,7 @@ import { db } from "@/lib/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { format } from "date-fns";
 import { Timestamp } from "firebase/firestore";
+import { LEAVE_LIMITS, LeaveType } from "@/lib/constants";
 
 interface LeaveRequest {
     id: string;
@@ -17,6 +18,7 @@ interface LeaveRequest {
     status: "Pending" | "Approved" | "Rejected" | "Recommended";
     fromDate: string;
     toDate: string;
+    leaveValue?: number;
     createdAt?: Timestamp;
 }
 
@@ -77,7 +79,7 @@ function StaffDashboardContent() {
                 return timeB - timeA;
             });
 
-            setLeaves(leavesData.slice(0, 5));
+            setLeaves(leavesData);
 
             setStats({
                 total: leavesData.length,
@@ -149,6 +151,46 @@ function StaffDashboardContent() {
                     ))}
                 </div>
 
+
+
+                {/* Leave Balances Section */}
+                <div className="rounded-xl bg-white p-4 md:p-6 shadow-sm border border-gray-100">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Leave Balances (Used / Total)</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        {Object.entries(LEAVE_LIMITS).map(([type, limit]) => {
+                            // Calculate used leaves for this type in current year
+                            const currentYear = new Date().getFullYear();
+                            const used = leaves
+                                .filter(l =>
+                                    l.type === type &&
+                                    l.status === 'Approved' &&
+                                    (l.fromDate ? new Date(l.fromDate).getFullYear() === currentYear : true)
+                                )
+                                .reduce((acc, curr) => acc + (curr.leaveValue || 0), 0);
+
+                            const percentage = Math.min((used / limit) * 100, 100);
+                            const isNearLimit = percentage >= 80;
+
+                            return (
+                                <div key={type} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-sm font-medium text-gray-700 truncate" title={type}>{type}</span>
+                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isNearLimit ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                                            {used}/{limit}
+                                        </span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                        <div
+                                            className={`h-2 rounded-full transition-all duration-500 ${isNearLimit ? 'bg-red-500' : 'bg-green-500'}`}
+                                            style={{ width: `${percentage}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
                 <div className="rounded-xl bg-white p-4 md:p-6 shadow-sm border border-gray-100">
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
                     {loading ? (
@@ -168,7 +210,7 @@ function StaffDashboardContent() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    {leaves.map((leave) => (
+                                    {leaves.slice(0, 5).map((leave) => (
                                         <tr key={leave.id}>
                                             <td className="px-4 py-3 text-sm font-medium text-gray-900">{leave.type}</td>
                                             <td className="px-4 py-3 text-sm text-gray-600">
@@ -191,6 +233,6 @@ function StaffDashboardContent() {
                     )}
                 </div>
             </div>
-        </DashboardLayout>
+        </DashboardLayout >
     );
 }

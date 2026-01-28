@@ -7,8 +7,9 @@ import { collection, query, where, onSnapshot } from "firebase/firestore";
 import EditStaffModal from "./EditStaffModal";
 import { Users, AlertCircle, Calendar, Pencil } from "lucide-react";
 import { format, startOfYear, endOfYear } from "date-fns";
+import { LEAVE_LIMITS, LeaveType } from "@/lib/constants";
 
-// ... (StaffData interface remains the same)
+
 interface StaffData {
     id: string;
     email: string;
@@ -21,6 +22,7 @@ interface StaffData {
     appointmentNo?: string;
     status?: string;
     leavesUsed: number;
+    leaveBalances: Record<string, number>;
 }
 
 export default function AdminStaffOverview() {
@@ -34,7 +36,7 @@ export default function AdminStaffOverview() {
     useEffect(() => {
         if (!db) return;
         // 1. Fetch all staff members
-        const staffQuery = query(collection(db, "users"), where("role", "in", ["staff", "princi"]));
+        const staffQuery = query(collection(db, "users"), where("role", "in", ["staff", "princi", "dir"]));
 
         // 2. Fetch all approved leaves for the current year
         const currentYear = new Date().getFullYear();
@@ -72,9 +74,18 @@ export default function AdminStaffOverview() {
                         leave.fromDate >= yearStart &&
                         leave.fromDate <= yearEnd
                     );
+                    const balances: Record<string, number> = {};
+                    Object.entries(LEAVE_LIMITS).forEach(([type, limit]) => {
+                        const used = userYearLeaves
+                            .filter(l => l.type === type)
+                            .reduce((sum, l) => sum + (l.leaveValue || 0), 0);
+                        balances[type] = Math.max(0, limit - used);
+                    });
+
                     return {
                         ...user,
-                        leavesUsed: userYearLeaves.reduce((sum, leave) => sum + (leave.leaveValue || 0), 0)
+                        leavesUsed: userYearLeaves.reduce((sum, leave) => sum + (leave.leaveValue || 0), 0),
+                        leaveBalances: balances
                     };
                 });
 
@@ -147,11 +158,22 @@ export default function AdminStaffOverview() {
                                     </button>
                                 </div>
                                 <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                                    <div className="flex items-center gap-2 text-gray-600">
-                                        <Calendar className="h-4 w-4" />
-                                        <span className="text-xs font-semibold uppercase tracking-wider">Leave Used ({mounted ? new Date().getFullYear() : ""})</span>
+                                    <div className="w-full">
+                                        <div className="flex items-center gap-2 text-gray-600 mb-2">
+                                            <Calendar className="h-4 w-4" />
+                                            <span className="text-xs font-semibold uppercase tracking-wider">Remaining Leaves</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {staff.leaveBalances && Object.entries(staff.leaveBalances).map(([type, remaining]) => (
+                                                <div key={type} className="flex flex-col bg-gray-50 px-2 py-1 rounded border border-gray-100 min-w-[50px]">
+                                                    <span className="text-[10px] text-gray-500 font-medium uppercase">{type}</span>
+                                                    <span className={`text-sm font-bold ${remaining === 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                                                        {remaining}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                    <span className="text-lg font-black text-blue-700">{staff.leavesUsed} Days</span>
                                 </div>
                             </div>
                         ))
@@ -167,7 +189,7 @@ export default function AdminStaffOverview() {
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Employee</th>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Details</th>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Email Address</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-center">Leave Used ({mounted ? new Date().getFullYear() : ""})</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-center">Remaining</th>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-right">Actions</th>
                                 </tr>
                             </thead>
@@ -195,9 +217,14 @@ export default function AdminStaffOverview() {
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-600">{staff.email}</td>
                                             <td className="px-6 py-4 text-center">
-                                                <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-black text-sm">
-                                                    {staff.leavesUsed} Days
-                                                </span>
+                                                <div className="flex flex-wrap justify-center gap-1.5 max-w-[220px] mx-auto">
+                                                    {staff.leaveBalances && Object.entries(staff.leaveBalances).map(([type, remaining]) => (
+                                                        <span key={type} className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase border ${remaining === 0 ? 'bg-red-50 text-red-700 border-red-100' : 'bg-gray-50 text-gray-700 border-gray-100'
+                                                            }`} title={type}>
+                                                            {type}: {remaining}
+                                                        </span>
+                                                    ))}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <button

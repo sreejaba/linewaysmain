@@ -7,8 +7,9 @@ import { collection, query, where, onSnapshot } from "firebase/firestore";
 import EditStaffModal from "./EditStaffModal";
 import { Users, AlertCircle, Calendar, Pencil } from "lucide-react";
 import { format, startOfYear, endOfYear } from "date-fns";
+import { LEAVE_LIMITS, LeaveType } from "@/lib/constants";
 
-// ... (StaffData interface remains the same)
+
 interface StaffData {
     id: string;
     email: string;
@@ -21,6 +22,8 @@ interface StaffData {
     appointmentNo?: string;
     status?: string;
     leavesUsed: number;
+    leaveBalances: Record<string, number>;
+    role?: string;
 }
 
 export default function AdminStaffOverview() {
@@ -44,6 +47,7 @@ export default function AdminStaffOverview() {
         const unsubUsers = onSnapshot(staffQuery, (userSnap) => {
             const users = userSnap.docs.map(doc => ({
                 id: doc.id,
+                role: doc.data().role || "staff",
                 email: doc.data().email,
                 displayName: doc.data().displayName || "N/A",
                 department: doc.data().department || "-",
@@ -72,9 +76,18 @@ export default function AdminStaffOverview() {
                         leave.fromDate >= yearStart &&
                         leave.fromDate <= yearEnd
                     );
+                    const balances: Record<string, number> = {};
+                    Object.entries(LEAVE_LIMITS).forEach(([type, limit]) => {
+                        const used = userYearLeaves
+                            .filter(l => l.type === type)
+                            .reduce((sum, l) => sum + (l.leaveValue || 0), 0);
+                        balances[type] = Math.max(0, limit - used);
+                    });
+
                     return {
                         ...user,
-                        leavesUsed: userYearLeaves.reduce((sum, leave) => sum + (leave.leaveValue || 0), 0)
+                        leavesUsed: userYearLeaves.reduce((sum, leave) => sum + (leave.leaveValue || 0), 0),
+                        leaveBalances: balances
                     };
                 });
 
@@ -139,6 +152,12 @@ export default function AdminStaffOverview() {
                                             <p className="text-xs text-gray-400 truncate mt-0.5">{staff.email}</p>
                                         </div>
                                     </div>
+                                    <span className={`px-2 py-1 text-xs font-bold uppercase rounded-full ${staff.role === 'princi' ? 'bg-purple-100 text-purple-700' :
+                                        staff.role === 'dir' ? 'bg-orange-100 text-orange-700' :
+                                            'bg-gray-100 text-gray-700'
+                                        }`}>
+                                        {staff.role === 'princi' ? 'Principal' : staff.role === 'dir' ? 'Director' : 'Staff'}
+                                    </span>
                                     <button
                                         onClick={() => setEditingStaff(staff)}
                                         className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -147,11 +166,22 @@ export default function AdminStaffOverview() {
                                     </button>
                                 </div>
                                 <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                                    <div className="flex items-center gap-2 text-gray-600">
-                                        <Calendar className="h-4 w-4" />
-                                        <span className="text-xs font-semibold uppercase tracking-wider">Leave Used ({mounted ? new Date().getFullYear() : ""})</span>
+                                    <div className="w-full">
+                                        <div className="flex items-center gap-2 text-gray-600 mb-2">
+                                            <Calendar className="h-4 w-4" />
+                                            <span className="text-xs font-semibold uppercase tracking-wider">Remaining Leaves</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {staff.leaveBalances && Object.entries(staff.leaveBalances).map(([type, remaining]) => (
+                                                <div key={type} className="flex flex-col bg-gray-50 px-2 py-1 rounded border border-gray-100 min-w-[50px]">
+                                                    <span className="text-[10px] text-gray-500 font-medium uppercase">{type}</span>
+                                                    <span className={`text-sm font-bold ${remaining === 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                                                        {remaining}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                    <span className="text-lg font-black text-blue-700">{staff.leavesUsed} Days</span>
                                 </div>
                             </div>
                         ))
@@ -165,17 +195,18 @@ export default function AdminStaffOverview() {
                             <thead className="bg-gray-50 border-b border-gray-100">
                                 <tr>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Employee</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Role</th>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Details</th>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Email Address</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-center">Leave Used ({mounted ? new Date().getFullYear() : ""})</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-center">Remaining</th>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {loading ? (
-                                    <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-400">Loading staff data...</td></tr>
+                                    <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400">Loading staff data...</td></tr>
                                 ) : staffs.length === 0 ? (
-                                    <tr><td colSpan={5} className="px-6 py-20 text-center text-gray-400 italic">No staff members registered.</td></tr>
+                                    <tr><td colSpan={6} className="px-6 py-20 text-center text-gray-400 italic">No staff members registered.</td></tr>
                                 ) : (
                                     staffs.map((staff) => (
                                         <tr key={staff.id} className="hover:bg-gray-50 transition-colors">
@@ -187,6 +218,14 @@ export default function AdminStaffOverview() {
                                                     <span className="font-semibold text-gray-900">{staff.displayName}</span>
                                                 </div>
                                             </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium uppercase ${staff.role === 'princi' ? 'bg-purple-100 text-purple-800' :
+                                                    staff.role === 'dir' ? 'bg-orange-100 text-orange-800' :
+                                                        'bg-gray-100 text-gray-800'
+                                                    }`}>
+                                                    {staff.role === 'princi' ? 'Principal' : staff.role === 'dir' ? 'Director' : 'Staff'}
+                                                </span>
+                                            </td>
                                             <td className="px-6 py-4 text-sm text-gray-600">
                                                 <div className="flex flex-col">
                                                     <span className="font-medium text-gray-900">{staff.designation}</span>
@@ -195,9 +234,14 @@ export default function AdminStaffOverview() {
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-600">{staff.email}</td>
                                             <td className="px-6 py-4 text-center">
-                                                <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-black text-sm">
-                                                    {staff.leavesUsed} Days
-                                                </span>
+                                                <div className="flex flex-wrap justify-center gap-1.5 max-w-[220px] mx-auto">
+                                                    {staff.leaveBalances && Object.entries(staff.leaveBalances).map(([type, remaining]) => (
+                                                        <span key={type} className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase border ${remaining === 0 ? 'bg-red-50 text-red-700 border-red-100' : 'bg-gray-50 text-gray-700 border-gray-100'
+                                                            }`} title={type}>
+                                                            {type}: {remaining}
+                                                        </span>
+                                                    ))}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <button
@@ -223,6 +267,6 @@ export default function AdminStaffOverview() {
                     />
                 )}
             </div>
-        </DashboardLayout>
+        </DashboardLayout >
     );
 }
