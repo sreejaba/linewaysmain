@@ -29,12 +29,7 @@ export default function EditStaffModal({ staff, onClose }: EditStaffModalProps) 
         setError(null);
 
         try {
-            await updateDoc(doc(db, "users", staff.id), {
-                ...formData,
-                role: formData.designation === "Principal" ? "princi" :
-                    formData.designation === "Director" ? "dir" :
-                        formData.designation === "Head of Department" ? "hod" : "staff"
-            });
+            await updateDoc(doc(db, "users", staff.id), formData);
             onClose();
         } catch (err: any) {
             console.error("Error updating staff:", err);

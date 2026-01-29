@@ -23,6 +23,7 @@ interface LeaveRequest {
     leaveValue: number;
     session: string;
     createdAt?: Timestamp;
+    recommendedBy?: string;
 }
 
 function AdminRequestManagerContent() {
@@ -44,7 +45,7 @@ function AdminRequestManagerContent() {
     // Fetch Staff Details
     useEffect(() => {
         if (!db) return;
-        const q = query(collection(db, "users"), where("role", "in", ["staff", "princi", "dir"])); // Include dir in mapping if needed
+        const q = query(collection(db, "users"), where("role", "in", ["staff", "princi", "dir", "hod"])); // Include dir in mapping if needed
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const mapping: Record<string, any> = {};
             snapshot.docs.forEach(doc => {
@@ -118,11 +119,17 @@ function AdminRequestManagerContent() {
     };
 
     const filteredLeaves = leaves.filter(l => {
-        // Hide Pending Compensatory Leaves (waiting for Director recommendation)
-        if (l.type === "Compensatory Leave" && l.status === "Pending") return false;
+        // Globally hide raw "Pending" requests from Principal (must be Recommended by HOD/Director)
+        if (l.status === "Pending") return false;
+
+        // Compensatory Leave Strict Flow: Must be recommended by Director
+        if (l.type === "Compensatory Leave") {
+            if (l.recommendedBy !== "Director") return false;
+        }
 
         if (filter === "All") return true;
-        if (filter === "Pending") return l.status === "Pending" || l.status === "Recommended";
+        // The "Pending" filter tab should now show "Recommended" items (actionable items for Principal)
+        if (filter === "Pending") return l.status === "Recommended";
         return l.status === filter;
     });
 
@@ -162,7 +169,7 @@ function AdminRequestManagerContent() {
                                                 {staff ? `${staff.salutation || ""} ${staff.displayName}` : leave.userEmail}
                                             </h3>
                                             <p className="text-xs text-gray-500">
-                                                {staff ? `${staff.designation || "-"} • ${staff.department || "-"}` : "External"}
+                                                {staff ? <>{staff.designation || "-"}<br />{staff.department || "-"}</> : "External User"}
                                             </p>
                                             <div className="flex items-center gap-1 mt-1 text-xs text-blue-600 font-medium">
                                                 <CalendarClock className="h-3 w-3" />
@@ -176,7 +183,7 @@ function AdminRequestManagerContent() {
                                                 leave.status === "Recommended" ? "bg-blue-100 text-blue-700 border-blue-200" :
                                                     "bg-yellow-100 text-yellow-700 border-yellow-200"
                                             }`}>
-                                            {leave.status}
+                                            {leave.status === "Recommended" ? (leave.recommendedBy ? `${leave.recommendedBy} Recommended` : "Recommended by HOD") : leave.status}
                                         </span>
                                     </div>
                                     <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded-lg">
@@ -240,14 +247,14 @@ function AdminRequestManagerContent() {
                                                             {staff ? `${staff.salutation || ""} ${staff.displayName}` : leave.userEmail}
                                                         </span>
                                                         <span className="text-xs text-gray-500 block mt-0.5">
-                                                            {staff ? `${staff.designation || "-"} • ${staff.department || "-"}` : "External User"}
+                                                            {staff ? <>{staff.designation || "-"}<br />{staff.department || "-"}</> : "External User"}
                                                         </span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
                                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${Math.max(0, (LEAVE_LIMITS[leave.type as LeaveType] || 0) - (leaveUsageMap[leave.userId]?.[leave.type] || 0)) === 0
-                                                            ? 'bg-red-100 text-red-700'
-                                                            : 'bg-blue-50 text-blue-700'
+                                                        ? 'bg-red-100 text-red-700'
+                                                        : 'bg-blue-50 text-blue-700'
                                                         }`}>
                                                         {Math.max(0, (LEAVE_LIMITS[leave.type as LeaveType] || 0) - (leaveUsageMap[leave.userId]?.[leave.type] || 0))} left
                                                     </span>
@@ -272,7 +279,7 @@ function AdminRequestManagerContent() {
                                                             leave.status === "Recommended" ? "bg-blue-100 text-blue-700 border-blue-200" :
                                                                 "bg-yellow-100 text-yellow-700 border-yellow-200"
                                                         }`}>
-                                                        {leave.status}
+                                                        {leave.status === "Recommended" ? (leave.recommendedBy ? `${leave.recommendedBy} Recommended` : "Recommended by HOD") : leave.status}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">

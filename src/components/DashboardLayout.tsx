@@ -8,7 +8,7 @@ import { Menu } from "lucide-react";
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
-    allowedRole?: "admin" | "staff" | "dir" | "princi";
+    allowedRole?: "admin" | "staff" | "dir" | "princi" | "hod";
 }
 
 export default function DashboardLayout({ children, allowedRole }: DashboardLayoutProps) {
@@ -21,17 +21,18 @@ export default function DashboardLayout({ children, allowedRole }: DashboardLayo
             if (!user) {
                 router.push("/login");
                 // If role mismatch (and not the special case of princi viewing staff pages, or dir viewing admin pages)
-                const isStaffAccessingStaff = allowedRole === "staff" && (role === "princi" || role === "dir");
-                const isAdminAccessingAdmin = allowedRole === "admin" && (role === "dir" || role === "princi"); // Allow princi/dir on admin pages if needed, but we have specific pages now.
+                const isStaffAccessingStaff = allowedRole === "staff" && (role === "princi" || role === "dir" || role === "hod");
+                const isAdminAccessingAdmin = allowedRole === "admin" && (role === "dir" || role === "princi" || role === "hod"); // Allow princi/dir/hod on admin pages if needed, but we have specific pages now.
 
                 // Strict check for dedicated pages
                 if (allowedRole && role !== allowedRole) {
-                    // Exception for staff pages which princi/dir can see
-                    if (allowedRole === "staff" && (role === "princi" || role === "dir")) {
+                    // Exception for staff pages which princi/dir/hod can see
+                    if (allowedRole === "staff" && (role === "princi" || role === "dir" || role === "hod")) {
                         // allowed
                     } else {
                         if (role === "admin") router.push("/admin");
                         else if (role === "dir") router.push("/director");
+                        else if (role === "hod") router.push("/hod");
                         else if (role === "princi") router.push("/principal");
                         else router.push("/staff");
                     }
@@ -69,7 +70,7 @@ export default function DashboardLayout({ children, allowedRole }: DashboardLayo
     }
 
     // If role mismatch
-    const isStaffAccessingStaff = allowedRole === "staff" && (role === "princi" || role === "dir");
+    const isStaffAccessingStaff = allowedRole === "staff" && (role === "princi" || role === "dir" || role === "hod");
     // We are strict now: princi must be on allowedRole="princi", dir on "dir".
 
     if (allowedRole && role !== allowedRole && !isStaffAccessingStaff) {

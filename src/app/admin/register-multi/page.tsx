@@ -80,7 +80,9 @@ export default function RegisterMultiStaffPage() {
                         await setDoc(doc(db, "users", uid), {
                             email: email,
                             displayName: row['displayName'] || "",
-                            role: (row['designation'] || "") === "Principal" ? "princi" : (row['designation'] || "") === "Director" ? "dir" : "staff",
+                            role: (row['designation'] || "") === "Principal" ? "princi" :
+                                (row['designation'] || "") === "Director" ? "dir" :
+                                    (row['designation'] || "") === "Head of Department" ? "hod" : "staff",
                             salutation: row['salutation'] || "Mr.",
                             dateOfJoining: row['dateOfJoining'] || "",
                             appointmentNo: row['appointmentNo'] || "",

@@ -14,7 +14,7 @@ interface UserData {
 
 interface AuthContextType {
     user: User | null;
-    role: "admin" | "staff" | "princi" | "dir" | null;
+    role: "admin" | "staff" | "princi" | "dir" | "hod" | null;
     userData: UserData | null;
     loading: boolean;
 }
@@ -28,7 +28,7 @@ const AuthContext = createContext<AuthContextType>({
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
-    const [role, setRole] = useState<"admin" | "staff" | "princi" | "dir" | null>(null);
+    const [role, setRole] = useState<"admin" | "staff" | "princi" | "dir" | "hod" | null>(null);
     const [userData, setUserData] = useState<UserData | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();

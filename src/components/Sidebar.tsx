@@ -63,20 +63,36 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     ];
 
     const adminLinks: NavLink[] = [
-        { name: role === "princi" ? "Principal Dashboard" : role === "dir" ? "Director Dashboard" : "Admin Dashboard", href: role === "princi" ? "/principal" : role === "dir" ? "/director" : "/admin", icon: LayoutDashboard },
+        {
+            name: role === "princi" ? "Principal Dashboard" :
+                role === "dir" ? "Director Dashboard" :
+                    role === "hod" ? "HOD Dashboard" : "Admin Dashboard",
+            href: role === "princi" ? "/principal" :
+                role === "dir" ? "/director" :
+                    role === "hod" ? "/hod" : "/admin",
+            icon: LayoutDashboard
+        },
         {
             name: "Manage Requests",
-            href: role === "princi" ? "/principal/requests" : role === "dir" ? "/director/requests" : "/admin/requests",
+            href: role === "princi" ? "/principal/requests" :
+                role === "dir" ? "/director/requests" :
+                    role === "hod" ? "/hod/requests" : "/admin/requests",
             icon: Calendar,
             subItems: [
-                { name: "Pending", href: role === "princi" ? "/principal/requests?status=Pending" : role === "dir" ? "/director/requests?status=Pending" : "/admin/requests?status=Pending" },
-                { name: "Recommended", href: role === "princi" ? "/principal/requests?status=Recommended" : role === "dir" ? "/director/requests?status=Recommended" : "/admin/requests?status=Recommended" },
-                { name: "Approved", href: role === "princi" ? "/principal/requests?status=Approved" : role === "dir" ? "/director/requests?status=Approved" : "/admin/requests?status=Approved" },
-                { name: "Rejected", href: role === "princi" ? "/principal/requests?status=Rejected" : role === "dir" ? "/director/requests?status=Rejected" : "/admin/requests?status=Rejected" },
-                { name: "All", href: role === "princi" ? "/principal/requests?status=All" : role === "dir" ? "/director/requests?status=All" : "/admin/requests?status=All" },
+                { name: "Pending", href: role === "princi" ? "/principal/requests?status=Pending" : role === "dir" ? "/director/requests?status=Pending" : role === "hod" ? "/hod/requests?status=Pending" : "/admin/requests?status=Pending" },
+                { name: "Recommended", href: role === "princi" ? "/principal/requests?status=Recommended" : role === "dir" ? "/director/requests?status=Recommended" : role === "hod" ? "/hod/requests?status=Recommended" : "/admin/requests?status=Recommended" },
+                { name: "Approved", href: role === "princi" ? "/principal/requests?status=Approved" : role === "dir" ? "/director/requests?status=Approved" : role === "hod" ? "/hod/requests?status=Approved" : "/admin/requests?status=Approved" },
+                { name: "Rejected", href: role === "princi" ? "/principal/requests?status=Rejected" : role === "dir" ? "/director/requests?status=Rejected" : role === "hod" ? "/hod/requests?status=Rejected" : "/admin/requests?status=Rejected" },
+                { name: "All", href: role === "princi" ? "/principal/requests?status=All" : role === "dir" ? "/director/requests?status=All" : role === "hod" ? "/hod/requests?status=All" : "/admin/requests?status=All" },
             ]
         },
-        { name: "Staffs", href: role === "princi" ? "/principal/staffs" : role === "dir" ? "/director/staffs" : "/admin/staffs", icon: ClipboardList },
+        {
+            name: "Staffs",
+            href: role === "princi" ? "/principal/staffs" :
+                role === "dir" ? "/director/staffs" :
+                    role === "hod" ? "/hod/staffs" : "/admin/staffs",
+            icon: ClipboardList
+        },
     ];
 
     if (role === "admin") {
@@ -86,7 +102,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         );
     }
 
-    const links = (role === "admin" || role === "dir" || role === "princi") ? adminLinks : staffLinks;
+    if (role === "hod") {
+        adminLinks.push(
+            { name: "Request Leave", href: "/hod/request", icon: FilePlus },
+            { name: "My History", href: "/hod/history", icon: ClipboardList }
+        );
+    }
+
+    const links = (role === "admin" || role === "dir" || role === "princi" || role === "hod") ? adminLinks : staffLinks;
 
     return (
         <>
@@ -145,7 +168,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                                 onClick={() => setIsOpen(false)}
                                                 className={cn(
                                                     "px-4 py-1.5 text-xs font-medium rounded-r-lg transition-colors border-l-2",
-                                                    (mounted && (pathname + window.location.search === sub.href)) || ((pathname === "/admin/requests" || pathname === "/director/requests" || pathname === "/principal/requests") && sub.name === "Pending" && (mounted && !window.location.search))
+                                                    (mounted && (pathname + window.location.search === sub.href)) || ((pathname === "/admin/requests" || pathname === "/director/requests" || pathname === "/principal/requests" || pathname === "/hod/requests") && sub.name === "Pending" && (mounted && !window.location.search))
                                                         ? "text-blue-700 bg-blue-50/50 border-blue-600"
                                                         : "text-gray-500 hover:text-gray-900 hover:bg-gray-50 border-transparent"
                                                 )}

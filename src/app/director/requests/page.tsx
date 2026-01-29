@@ -23,6 +23,7 @@ interface LeaveRequest {
     leaveValue: number;
     session: string;
     createdAt?: Timestamp;
+    recommendedBy?: string;
 }
 
 function AdminRequestManagerContent() {
@@ -44,7 +45,7 @@ function AdminRequestManagerContent() {
     // Fetch Staff Details
     useEffect(() => {
         if (!db) return;
-        const q = query(collection(db, "users"), where("role", "in", ["staff", "princi"]));
+        const q = query(collection(db, "users"), where("role", "in", ["staff", "princi", "hod"]));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const mapping: Record<string, any> = {};
             snapshot.docs.forEach(doc => {
@@ -110,16 +111,43 @@ function AdminRequestManagerContent() {
     const handleAction = async (id: string, status: "Approved" | "Rejected" | "Recommended") => {
         try {
             const leaveRef = doc(db, "leaves", id);
-            await updateDoc(leaveRef, { status });
+            if (status === "Recommended") {
+                await updateDoc(leaveRef, { status, recommendedBy: "Director" });
+            } else {
+                await updateDoc(leaveRef, { status });
+            }
         } catch (error) {
             console.error("Error updating leave:", error);
             alert("Failed to update status.");
         }
     };
 
-    const filteredLeaves = filter === "All"
-        ? leaves
-        : leaves.filter(l => l.status === filter);
+
+    const filteredLeaves = leaves.filter(l => {
+        // Compensatory Leave Workflow: Staff -> HOD -> Director -> Principal
+        if (l.type === "Compensatory Leave") {
+            // Director sees it only if it is "Recommended" AND currently recommended by "HOD"
+            // If it is already recommended by Director or others, status might still be "Recommended" but we need to check flow.
+            // Wait, if Director recommends it, status is still "Recommended" but recommendedBy becomes "Director".
+            // So Director should see it if recommendedBy is "HOD".
+            if (filter === "Pending") {
+                return l.status === "Recommended" && l.recommendedBy === "HOD";
+            }
+        }
+
+        if (filter === "All") return true;
+
+        // For standard "Pending" view, we might need to adjust generic logic too if other leaves come here.
+        // Assuming other leaves go straight to Director or HOD->Director? 
+        // For now, let's keep generic behavior but override for Comp Leave.
+
+        if (filter === "Pending") {
+            // General logic: Pending or Recommended (if coming from lower level)
+            return l.status === "Pending" || l.status === "Recommended";
+        }
+
+        return l.status === filter;
+    });
 
     return (
         <DashboardLayout allowedRole="dir">
@@ -171,7 +199,7 @@ function AdminRequestManagerContent() {
                                                 {staff ? `${staff.salutation || ""} ${staff.displayName}` : leave.userEmail}
                                             </h3>
                                             <p className="text-xs text-gray-500">
-                                                {staff ? `${staff.designation || "-"} • ${staff.department || "-"}` : "External"}
+                                                {staff ? <>{staff.designation || "-"}<br />{staff.department || "-"}</> : "External"}
                                             </p>
                                             <div className="flex items-center gap-1 mt-1 text-xs text-blue-600 font-medium">
                                                 <CalendarClock className="h-3 w-3" />
@@ -185,7 +213,7 @@ function AdminRequestManagerContent() {
                                                 leave.status === "Recommended" ? "bg-blue-100 text-blue-700 border-blue-200" :
                                                     "bg-yellow-100 text-yellow-700 border-yellow-200"
                                             }`}>
-                                            {leave.status}
+                                            {leave.status === "Recommended" ? (leave.recommendedBy ? `${leave.recommendedBy} Recommended` : "Recommended by HOD") : leave.status}
                                         </span>
                                     </div>
                                     <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded-lg">
@@ -196,7 +224,7 @@ function AdminRequestManagerContent() {
                                     <div className="text-xs text-gray-400">
                                         {leave.fromDate && format(new Date(leave.fromDate), "MMM dd")} - {leave.toDate && format(new Date(leave.toDate), "MMM dd")}
                                     </div>
-                                    {leave.status === "Pending" && (
+                                    {(leave.status === "Pending" || (leave.status === "Recommended" && leave.recommendedBy === "HOD")) && (
                                         <div className="flex gap-2 pt-2 border-t border-gray-100">
                                             <button
                                                 onClick={() => handleAction(leave.id, "Recommended")}
@@ -249,14 +277,14 @@ function AdminRequestManagerContent() {
                                                             {staff ? `${staff.salutation || ""} ${staff.displayName}` : leave.userEmail}
                                                         </span>
                                                         <span className="text-xs text-gray-500 block mt-0.5">
-                                                            {staff ? `${staff.designation || "-"} • ${staff.department || "-"}` : "External User"}
+                                                            {staff ? <>{staff.designation || "-"}<br />{staff.department || "-"}</> : "External User"}
                                                         </span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
                                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${Math.max(0, (LEAVE_LIMITS[leave.type as LeaveType] || 0) - (leaveUsageMap[leave.userId]?.[leave.type] || 0)) === 0
-                                                            ? 'bg-red-100 text-red-700'
-                                                            : 'bg-blue-50 text-blue-700'
+                                                        ? 'bg-red-100 text-red-700'
+                                                        : 'bg-blue-50 text-blue-700'
                                                         }`}>
                                                         {Math.max(0, (LEAVE_LIMITS[leave.type as LeaveType] || 0) - (leaveUsageMap[leave.userId]?.[leave.type] || 0))} left
                                                     </span>
@@ -281,12 +309,12 @@ function AdminRequestManagerContent() {
                                                             leave.status === "Recommended" ? "bg-blue-100 text-blue-700 border-blue-200" :
                                                                 "bg-yellow-100 text-yellow-700 border-yellow-200"
                                                         }`}>
-                                                        {leave.status}
+                                                        {leave.status === "Recommended" ? (leave.recommendedBy ? `${leave.recommendedBy} Recommended` : "Recommended by HOD") : leave.status}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex justify-end gap-2">
-                                                        {leave.status === "Pending" ? (
+                                                        {(leave.status === "Pending" || (leave.status === "Recommended" && leave.recommendedBy === "HOD")) ? (
                                                             <>
                                                                 <button
                                                                     onClick={() => handleAction(leave.id, "Recommended")}
