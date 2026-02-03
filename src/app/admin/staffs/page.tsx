@@ -5,7 +5,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { db } from "@/lib/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import EditStaffModal from "./EditStaffModal";
-import { Users, AlertCircle, Calendar, Pencil } from "lucide-react";
+import { Users, AlertCircle, Calendar, Pencil, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { format, startOfYear, endOfYear } from "date-fns";
 import { LEAVE_LIMITS, LeaveType } from "@/lib/constants";
 
@@ -26,18 +26,30 @@ interface StaffData {
     role?: string;
 }
 
+type SortKey = 'displayName' | 'role' | 'details' | 'email' | 'remaining';
+interface SortConfig {
+    key: SortKey;
+    direction: 'asc' | 'desc';
+}
+
 export default function AdminStaffOverview() {
     const [staffs, setStaffs] = useState<StaffData[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [mounted, setMounted] = useState(false);
     const [editingStaff, setEditingStaff] = useState<StaffData | null>(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'displayName', direction: 'asc' });
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // ... (useEffect hook remains roughly the same, but we need to ensure we map all fields)
     useEffect(() => {
         if (!db) return;
         // 1. Fetch all staff members
-        const staffQuery = query(collection(db, "users"), where("role", "in", ["staff", "princi", "dir"]));
+        const staffQuery = query(collection(db, "users"), where("role", "in", ["staff", "princi", "dir", "hod"]));
 
         // 2. Fetch all approved leaves for the current year
         const currentYear = new Date().getFullYear();
@@ -110,17 +122,106 @@ export default function AdminStaffOverview() {
         return () => unsubUsers();
     }, []);
 
+    const handleSort = (key: SortKey) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const getSortedStaffs = (staffList: StaffData[]) => {
+        const sorted = [...staffList].sort((a, b) => {
+            let aValue: any = '';
+            let bValue: any = '';
+
+            switch (sortConfig.key) {
+                case 'displayName':
+                    aValue = a.displayName;
+                    bValue = b.displayName;
+                    break;
+                case 'role':
+                    aValue = a.role;
+                    bValue = b.role;
+                    break;
+                case 'details': // Sort by designation
+                    aValue = a.designation;
+                    bValue = b.designation;
+                    break;
+                case 'email':
+                    aValue = a.email;
+                    bValue = b.email;
+                    break;
+                case 'remaining': // Sort by total remaining leaves
+                    aValue = Object.values(a.leaveBalances || {}).reduce((sum, val) => sum + val, 0);
+                    bValue = Object.values(b.leaveBalances || {}).reduce((sum, val) => sum + val, 0);
+                    break;
+                default:
+                    return 0;
+            }
+
+            if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+        return sorted;
+    };
+
+
+    const getDisplayRole = (role?: string) => {
+        if (role === 'princi') return 'Principal';
+        if (role === 'dir') return 'Director';
+        if (role === 'hod') return 'HOD';
+        return 'Staff';
+    };
+
+    const filteredStaffs = staffs.filter((staff) => {
+        const searchLower = searchTerm.toLowerCase();
+        const displayRole = getDisplayRole(staff.role).toLowerCase();
+        return (
+            staff.displayName?.toLowerCase().includes(searchLower) ||
+            staff.email?.toLowerCase().includes(searchLower) ||
+            staff.department?.toLowerCase().includes(searchLower) ||
+            staff.designation?.toLowerCase().includes(searchLower) ||
+            staff.role?.toLowerCase().includes(searchLower) ||
+            displayRole.includes(searchLower)
+        );
+    });
+
+    const sortedAndFilteredStaffs = getSortedStaffs(filteredStaffs);
+
+    const SortIcon = ({ columnKey }: { columnKey: SortKey }) => {
+        if (sortConfig.key !== columnKey) return <ArrowUpDown className="h-4 w-4 text-gray-400 ml-1" />;
+        return sortConfig.direction === 'asc' ? <ArrowUp className="h-4 w-4 text-blue-600 ml-1" /> : <ArrowDown className="h-4 w-4 text-blue-600 ml-1" />;
+    };
+
+
     return (
         <DashboardLayout allowedRole="admin">
             <div className="space-y-6">
-                <div className="flex flex-col gap-2">
-                    <h1 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <Users className="h-6 w-6 text-blue-600" />
-                        Staff Overview
-                    </h1>
-                    <p className="text-sm text-gray-500">
-                        View all staff members and their leave usage for {mounted ? new Date().getFullYear() : ""}.
-                    </p>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex flex-col gap-2">
+                        <h1 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
+                            <Users className="h-6 w-6 text-blue-600" />
+                            Staff Overview
+                        </h1>
+                        {/* <p className="text-sm text-gray-500">
+                            View all staff members and their leave usage for {mounted ? new Date().getFullYear() : ""}.
+                        </p> */}
+                    </div>
+
+                    <div className="relative w-full md:w-72">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Search staff..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow shadow-sm"
+                        />
+                    </div>
                 </div>
 
                 {error && (
@@ -134,12 +235,12 @@ export default function AdminStaffOverview() {
                 <div className="grid grid-cols-1 gap-4 md:hidden">
                     {loading ? (
                         <div className="text-center py-12 text-gray-400">Loading staff data...</div>
-                    ) : staffs.length === 0 ? (
+                    ) : sortedAndFilteredStaffs.length === 0 ? (
                         <div className="text-center py-12 text-gray-400 italic bg-white rounded-xl border border-gray-100">
-                            No staff members found.
+                            {searchTerm ? "No staff members match your search." : "No staff members found."}
                         </div>
                     ) : (
-                        staffs.map((staff) => (
+                        sortedAndFilteredStaffs.map((staff) => (
                             <div key={staff.id} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-3">
@@ -154,9 +255,12 @@ export default function AdminStaffOverview() {
                                     </div>
                                     <span className={`px-2 py-1 text-xs font-bold uppercase rounded-full ${staff.role === 'princi' ? 'bg-purple-100 text-purple-700' :
                                         staff.role === 'dir' ? 'bg-orange-100 text-orange-700' :
-                                            'bg-gray-100 text-gray-700'
+                                            staff.role === 'hod' ? 'bg-indigo-100 text-indigo-700' :
+                                                'bg-gray-100 text-gray-700'
                                         }`}>
-                                        {staff.role === 'princi' ? 'Principal' : staff.role === 'dir' ? 'Director' : 'Staff'}
+                                        {staff.role === 'princi' ? 'Principal' :
+                                            staff.role === 'dir' ? 'Director' :
+                                                staff.role === 'hod' ? 'HOD' : 'Staff'}
                                     </span>
                                     <button
                                         onClick={() => setEditingStaff(staff)}
@@ -194,22 +298,36 @@ export default function AdminStaffOverview() {
                         <table className="w-full text-left border-collapse">
                             <thead className="bg-gray-50 border-b border-gray-100">
                                 <tr>
-                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Employee</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Role</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Details</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Email Address</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-center">Remaining</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-center">Sl. No</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-50" onClick={() => handleSort('displayName')}>
+                                        <div className="flex items-center gap-1">Employee <SortIcon columnKey="displayName" /></div>
+                                    </th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-50" onClick={() => handleSort('role')}>
+                                        <div className="flex items-center gap-1">Role <SortIcon columnKey="role" /></div>
+                                    </th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-50" onClick={() => handleSort('details')}>
+                                        <div className="flex items-center gap-1">Details <SortIcon columnKey="details" /></div>
+                                    </th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-50" onClick={() => handleSort('email')}>
+                                        <div className="flex items-center gap-1">Email <SortIcon columnKey="email" /></div>
+                                    </th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-center cursor-pointer hover:bg-gray-50" onClick={() => handleSort('remaining')}>
+                                        <div className="flex items-center justify-center gap-1">Remaining <SortIcon columnKey="remaining" /></div>
+                                    </th>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {loading ? (
-                                    <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400">Loading staff data...</td></tr>
-                                ) : staffs.length === 0 ? (
-                                    <tr><td colSpan={6} className="px-6 py-20 text-center text-gray-400 italic">No staff members registered.</td></tr>
+                                    <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-400">Loading staff data...</td></tr>
+                                ) : sortedAndFilteredStaffs.length === 0 ? (
+                                    <tr><td colSpan={7} className="px-6 py-20 text-center text-gray-400 italic">{searchTerm ? "No staff members match your search." : "No staff members registered."}</td></tr>
                                 ) : (
-                                    staffs.map((staff) => (
+                                    sortedAndFilteredStaffs.map((staff, index) => (
                                         <tr key={staff.id} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-6 py-4 text-center text-sm text-gray-500 font-medium">
+                                                {index + 1}
+                                            </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     <div className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold uppercase text-sm">
@@ -221,9 +339,12 @@ export default function AdminStaffOverview() {
                                             <td className="px-6 py-4">
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium uppercase ${staff.role === 'princi' ? 'bg-purple-100 text-purple-800' :
                                                     staff.role === 'dir' ? 'bg-orange-100 text-orange-800' :
-                                                        'bg-gray-100 text-gray-800'
+                                                        staff.role === 'hod' ? 'bg-indigo-100 text-indigo-800' :
+                                                            'bg-gray-100 text-gray-800'
                                                     }`}>
-                                                    {staff.role === 'princi' ? 'Principal' : staff.role === 'dir' ? 'Director' : 'Staff'}
+                                                    {staff.role === 'princi' ? 'Principal' :
+                                                        staff.role === 'dir' ? 'Director' :
+                                                            staff.role === 'hod' ? 'HOD' : 'Staff'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-600">
