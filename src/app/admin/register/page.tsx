@@ -128,6 +128,7 @@ export default function RegisterStaffPage() {
                                     <option value="Civil Engineering">Civil Engineering</option>
                                     <option value="Electrical & Electronics Engineering">Electrical & Electronics Engineering</option>
                                     <option value="Computer Science & Engineering">Computer Science & Engineering</option>
+                                    <option value="Mechanical Engineering">Mechanical Engineering</option>
                                     <option value="Basic Science & Humanities">Basic Science & Humanities</option>
                                     <option value="Physical Education">Physical Education</option>
                                     <option value="Office & Administration">Office & Administration</option>

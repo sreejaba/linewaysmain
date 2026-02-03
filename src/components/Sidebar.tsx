@@ -98,7 +98,8 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     if (role === "admin") {
         adminLinks.push(
             { name: "Register Staff", href: "/admin/register", icon: UserPlus },
-            { name: "Register Multiple Staffs", href: "/admin/register-multi", icon: UserPlus }
+            { name: "Register Multiple Staffs", href: "/admin/register-multi", icon: UserPlus },
+            { name: "Add Leave", href: "/admin/add-leave", icon: FilePlus }
         );
     }
 
