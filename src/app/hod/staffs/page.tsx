@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { db } from "@/lib/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { useAuth } from "@/lib/AuthContext";
 import EditStaffModal from "./EditStaffModal";
 import { Users, AlertCircle, Calendar, Pencil } from "lucide-react";
 import { format, startOfYear, endOfYear } from "date-fns";
@@ -26,6 +27,7 @@ interface StaffData {
 }
 
 export default function AdminStaffOverview() {
+    const { userData, loading: authLoading } = useAuth();
     const [staffs, setStaffs] = useState<StaffData[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -34,7 +36,8 @@ export default function AdminStaffOverview() {
 
     // ... (useEffect hook remains roughly the same, but we need to ensure we map all fields)
     useEffect(() => {
-        if (!db) return;
+        if (!db || authLoading) return;
+
         // 1. Fetch all staff members
         const staffQuery = query(collection(db, "users"), where("role", "in", ["staff", "princi", "dir", "hod"]));
 
@@ -59,6 +62,12 @@ export default function AdminStaffOverview() {
                 leavesUsed: 0
             }));
 
+            // Filter by department if userData matches
+            const filteredUsers = userData?.department
+                ? users.filter(u => u.department === userData.department)
+                : users; // Should ideally always have a department for HOD
+
+
             // ... (leaves fetching logic stays the same)
             const leavesQuery = query(
                 collection(db, "leaves"),
@@ -68,7 +77,7 @@ export default function AdminStaffOverview() {
             const unsubLeaves = onSnapshot(leavesQuery, (leaveSnap) => {
                 const leaves = leaveSnap.docs.map(doc => doc.data());
 
-                const updatedStaffs = users.map(user => {
+                const updatedStaffs = filteredUsers.map(user => {
                     const userYearLeaves = leaves.filter(leave =>
                         leave.userId === user.id &&
                         leave.fromDate >= yearStart &&
@@ -106,7 +115,7 @@ export default function AdminStaffOverview() {
         });
 
         return () => unsubUsers();
-    }, []);
+    }, [authLoading, userData]);
 
     return (
         <DashboardLayout allowedRole="hod">
