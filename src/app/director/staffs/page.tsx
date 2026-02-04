@@ -26,7 +26,7 @@ interface StaffData {
     role?: string;
 }
 
-type SortKey = 'displayName' | 'role' | 'details' | 'email' | 'remaining';
+type SortKey = 'displayName' | 'role' | 'designation' | 'department' | 'email' | 'remaining';
 interface SortConfig {
     key: SortKey;
     direction: 'asc' | 'desc';
@@ -145,9 +145,13 @@ export default function AdminStaffOverview() {
                     aValue = a.role;
                     bValue = b.role;
                     break;
-                case 'details': // Sort by designation
+                case 'designation':
                     aValue = a.designation;
                     bValue = b.designation;
+                    break;
+                case 'department':
+                    aValue = a.department;
+                    bValue = b.department;
                     break;
                 case 'email':
                     aValue = a.email;
@@ -290,8 +294,11 @@ export default function AdminStaffOverview() {
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-50" onClick={() => handleSort('displayName')}>
                                         <div className="flex items-center gap-1">Employee <SortIcon columnKey="displayName" /></div>
                                     </th>
-                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-50" onClick={() => handleSort('details')}>
-                                        <div className="flex items-center gap-1">Details <SortIcon columnKey="details" /></div>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-50" onClick={() => handleSort('designation')}>
+                                        <div className="flex items-center gap-1">Designation <SortIcon columnKey="designation" /></div>
+                                    </th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-50" onClick={() => handleSort('department')}>
+                                        <div className="flex items-center gap-1">Department <SortIcon columnKey="department" /></div>
                                     </th>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-50" onClick={() => handleSort('email')}>
                                         <div className="flex items-center gap-1">Email <SortIcon columnKey="email" /></div>
@@ -304,9 +311,9 @@ export default function AdminStaffOverview() {
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {loading ? (
-                                    <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400">Loading staff data...</td></tr>
+                                    <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-400">Loading staff data...</td></tr>
                                 ) : sortedAndFilteredStaffs.length === 0 ? (
-                                    <tr><td colSpan={6} className="px-6 py-20 text-center text-gray-400 italic">{searchTerm ? "No staff members match your search." : "No staff members registered."}</td></tr>
+                                    <tr><td colSpan={7} className="px-6 py-20 text-center text-gray-400 italic">{searchTerm ? "No staff members match your search." : "No staff members registered."}</td></tr>
                                 ) : (
                                     sortedAndFilteredStaffs.map((staff, index) => (
                                         <tr key={staff.id} className="hover:bg-gray-50 transition-colors">
@@ -321,12 +328,8 @@ export default function AdminStaffOverview() {
                                                     <span className="font-semibold text-gray-900">{staff.displayName}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">
-                                                <div className="flex flex-col">
-                                                    <span className="font-medium text-gray-900">{staff.designation}</span>
-                                                    <span className="text-xs text-gray-500">{staff.department}</span>
-                                                </div>
-                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-600 font-medium">{staff.designation}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-600">{staff.department}</td>
                                             <td className="px-6 py-4 text-sm text-gray-600">{staff.email}</td>
                                             <td className="px-6 py-4 text-center">
                                                 <div className="flex flex-wrap justify-center gap-1.5 max-w-[220px] mx-auto">

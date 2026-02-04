@@ -187,7 +187,8 @@ export default function AdminStaffOverview() {
                             <thead className="bg-gray-50 border-b border-gray-100">
                                 <tr>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Employee</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Details</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Designation</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Department</th>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Email Address</th>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-center">Remaining</th>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-right">Actions</th>
@@ -195,9 +196,9 @@ export default function AdminStaffOverview() {
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {loading ? (
-                                    <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-400">Loading staff data...</td></tr>
+                                    <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400">Loading staff data...</td></tr>
                                 ) : staffs.length === 0 ? (
-                                    <tr><td colSpan={5} className="px-6 py-20 text-center text-gray-400 italic">No staff members registered.</td></tr>
+                                    <tr><td colSpan={6} className="px-6 py-20 text-center text-gray-400 italic">No staff members registered.</td></tr>
                                 ) : (
                                     staffs.map((staff) => (
                                         <tr key={staff.id} className="hover:bg-gray-50 transition-colors">
@@ -209,12 +210,8 @@ export default function AdminStaffOverview() {
                                                     <span className="font-semibold text-gray-900">{staff.displayName}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">
-                                                <div className="flex flex-col">
-                                                    <span className="font-medium text-gray-900">{staff.designation}</span>
-                                                    <span className="text-xs text-gray-500">{staff.department}</span>
-                                                </div>
-                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-600 font-medium">{staff.designation}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-600">{staff.department}</td>
                                             <td className="px-6 py-4 text-sm text-gray-600">{staff.email}</td>
                                             <td className="px-6 py-4 text-center">
                                                 <div className="flex flex-wrap justify-center gap-1.5 max-w-[220px] mx-auto">
