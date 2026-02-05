@@ -66,7 +66,7 @@ export default function AdminAddLeavePage() {
     }, []);
 
     const calculateLeaveValue = () => {
-        if (formData.session === "Morning" || formData.session === "Afternoon") {
+        if (formData.session === "Forenoon" || formData.session === "Afternoon") {
             return 0.5;
         }
         if (formData.fromDate && formData.toDate) {
@@ -215,7 +215,7 @@ export default function AdminAddLeavePage() {
                                 onChange={(e) => setFormData({ ...formData, session: e.target.value })}
                             >
                                 <option>Full Day</option>
-                                <option>Morning</option>
+                                <option>Forenoon</option>
                                 <option>Afternoon</option>
                             </select>
                         </div>

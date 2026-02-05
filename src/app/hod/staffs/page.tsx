@@ -149,11 +149,11 @@ export default function AdminStaffOverview() {
                         staffs.map((staff) => (
                             <div key={staff.id} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
                                 <div className="flex justify-between items-start">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold uppercase">
+                                    <div className="flex items-center gap-3 flex-1 min-w-0 mr-2">
+                                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold uppercase shrink-0">
                                             {staff.displayName?.[0] || staff.email?.[0]}
                                         </div>
-                                        <div className="overflow-hidden">
+                                        <div className="overflow-hidden min-w-0">
                                             <h3 className="font-bold text-gray-900 truncate">{staff.displayName}</h3>
                                             <p className="text-xs text-gray-500 truncate">{staff.department} • {staff.designation}</p>
                                             <p className="text-xs text-gray-400 truncate mt-0.5">{staff.email}</p>
@@ -161,7 +161,7 @@ export default function AdminStaffOverview() {
                                     </div>
                                     <button
                                         onClick={() => setEditingStaff(staff)}
-                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors shrink-0"
                                     >
                                         <Pencil className="h-5 w-5" />
                                     </button>
