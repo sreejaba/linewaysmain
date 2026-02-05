@@ -14,6 +14,7 @@ interface BulkLeaveRow {
     "Leave Type": string;
     "From Date": string | number; // Excel might return number for date
     "To Date": string | number;
+    Session?: string;
     Reason?: string;
     Status?: string;
 }
@@ -145,8 +146,19 @@ export default function BulkLeaveUpload() {
                     continue;
                 }
 
+                const session = row.Session?.trim() || "Full Day";
+                if (!["Full Day", "Forenoon", "Afternoon"].includes(session)) {
+                    tempLogs.push({ type: 'error', message: `Row ${rowNum}: Invalid Session '${session}'. Must be 'Full Day', 'Forenoon', or 'Afternoon'.` });
+                    continue;
+                }
+
                 // Calculate leave days (inclusive)
-                const days = differenceInDays(toDate, fromDate) + 1;
+                let days = 0;
+                if (session === "Forenoon" || session === "Afternoon") {
+                    days = 0.5;
+                } else {
+                    days = differenceInDays(toDate, fromDate) + 1;
+                }
 
                 const leaveData = {
                     userId,
@@ -154,6 +166,7 @@ export default function BulkLeaveUpload() {
                     type: leaveType,
                     fromDate: format(fromDate, "yyyy-MM-dd"),
                     toDate: format(toDate, "yyyy-MM-dd"),
+                    session,
                     reason: row.Reason || "Bulk Upload",
                     status: row.Status || "Approved",
                     leaveValue: days,
@@ -234,7 +247,7 @@ export default function BulkLeaveUpload() {
                         <ul className="list-disc pl-5 space-y-1">
                             <li>Upload an .xlsx or .xls file.</li>
                             <li>The sheet must contain these headers (case-sensitive): <code className="bg-white px-1 py-0.5 rounded border border-blue-200">Email</code>, <code className="bg-white px-1 py-0.5 rounded border border-blue-200">Leave Type</code>, <code className="bg-white px-1 py-0.5 rounded border border-blue-200">From Date</code>, <code className="bg-white px-1 py-0.5 rounded border border-blue-200">To Date</code>.</li>
-                            <li>Optional headers: <code className="bg-white px-1 py-0.5 rounded border border-blue-200">Reason</code>, <code className="bg-white px-1 py-0.5 rounded border border-blue-200">Status</code>.</li>
+                            <li>Optional headers: <code className="bg-white px-1 py-0.5 rounded border border-blue-200">Session</code>, <code className="bg-white px-1 py-0.5 rounded border border-blue-200">Reason</code>, <code className="bg-white px-1 py-0.5 rounded border border-blue-200">Status</code>.</li>
                             <li>Date format: YYYY-MM-DD or standard Excel date.</li>
                         </ul>
                     </div>
