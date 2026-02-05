@@ -5,7 +5,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { db } from "@/lib/firebase";
 import { collection, query, onSnapshot, doc, updateDoc, where } from "firebase/firestore";
 import { format, startOfYear, endOfYear } from "date-fns";
-import { Check, X, AlertCircle, CalendarClock } from "lucide-react";
+import { Check, X, AlertCircle, CalendarClock, Search } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Timestamp } from "firebase/firestore";
 import { LEAVE_LIMITS, LeaveType } from "@/lib/constants";
@@ -35,6 +35,7 @@ function AdminRequestManagerContent() {
     const searchParams = useSearchParams();
     const statusParam = searchParams.get("status") || "Pending";
     const [filter, setFilter] = useState<"All" | "Pending" | "Approved" | "Rejected" | "Recommended">(statusParam as any);
+    const [searchTerm, setSearchTerm] = useState("");
 
     useEffect(() => {
         if (["All", "Pending", "Approved", "Rejected", "Recommended"].includes(statusParam)) {
@@ -135,6 +136,14 @@ function AdminRequestManagerContent() {
             }
         }
 
+        const staff = staffMap[l.userId];
+        const searchLower = searchTerm.toLowerCase();
+        const matchesSearch = !searchTerm ||
+            ((staff?.displayName || "").toLowerCase().includes(searchLower) ||
+                (l.userEmail || "").toLowerCase().includes(searchLower));
+
+        if (!matchesSearch) return false;
+
         if (filter === "All") return true;
 
         // For standard "Pending" view, we might need to adjust generic logic too if other leaves come here.
@@ -170,6 +179,19 @@ function AdminRequestManagerContent() {
                                 {status}
                             </button>
                         ))}
+                    </div>
+
+                    <div className="relative w-full md:w-72">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Search requests..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow shadow-sm"
+                        />
                     </div>
                 </div>
 

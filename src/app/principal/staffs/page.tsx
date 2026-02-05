@@ -45,7 +45,7 @@ export default function AdminStaffOverview() {
     useEffect(() => {
         if (!db) return;
         // 1. Fetch all staff members
-        const staffQuery = query(collection(db, "users"), where("role", "in", ["staff", "princi", "dir"]));
+        const staffQuery = query(collection(db, "users"), where("role", "in", ["staff", "princi", "dir", "hod"]));
 
         // 2. Fetch all approved leaves for the current year
         const currentYear = new Date().getFullYear();
@@ -254,12 +254,23 @@ export default function AdminStaffOverview() {
                                             <p className="text-xs text-gray-400 truncate mt-0.5">{staff.email}</p>
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => setEditingStaff(staff)}
-                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors shrink-0"
-                                    >
-                                        <Pencil className="h-5 w-5" />
-                                    </button>
+                                    <div className="flex flex-col items-end gap-2 shrink-0">
+                                        <span className={`px-2 py-1 text-xs font-bold uppercase rounded-full ${staff.role === 'princi' ? 'bg-purple-100 text-purple-700' :
+                                            staff.role === 'dir' ? 'bg-orange-100 text-orange-700' :
+                                                staff.role === 'hod' ? 'bg-indigo-100 text-indigo-700' :
+                                                    'bg-gray-100 text-gray-700'
+                                            }`}>
+                                            {staff.role === 'princi' ? 'Principal' :
+                                                staff.role === 'dir' ? 'Director' :
+                                                    staff.role === 'hod' ? 'HOD' : 'Staff'}
+                                        </span>
+                                        <button
+                                            onClick={() => setEditingStaff(staff)}
+                                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                        >
+                                            <Pencil className="h-5 w-5" />
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="flex items-center justify-between pt-4 border-t border-gray-50">
                                     <div className="w-full">
@@ -294,6 +305,9 @@ export default function AdminStaffOverview() {
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-50" onClick={() => handleSort('displayName')}>
                                         <div className="flex items-center gap-1">Employee <SortIcon columnKey="displayName" /></div>
                                     </th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-50" onClick={() => handleSort('role')}>
+                                        <div className="flex items-center gap-1">Role <SortIcon columnKey="role" /></div>
+                                    </th>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-50" onClick={() => handleSort('designation')}>
                                         <div className="flex items-center gap-1">Designation <SortIcon columnKey="designation" /></div>
                                     </th>
@@ -327,6 +341,17 @@ export default function AdminStaffOverview() {
                                                     </div>
                                                     <span className="font-semibold text-gray-900">{staff.displayName}</span>
                                                 </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`inline-flex px-2 py-1 text-xs font-bold uppercase rounded-full ${staff.role === 'princi' ? 'bg-purple-100 text-purple-700' :
+                                                    staff.role === 'dir' ? 'bg-orange-100 text-orange-700' :
+                                                        staff.role === 'hod' ? 'bg-indigo-100 text-indigo-700' :
+                                                            'bg-gray-100 text-gray-700'
+                                                    }`}>
+                                                    {staff.role === 'princi' ? 'Principal' :
+                                                        staff.role === 'dir' ? 'Director' :
+                                                            staff.role === 'hod' ? 'HOD' : 'Staff'}
+                                                </span>
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-600 font-medium">{staff.designation}</td>
                                             <td className="px-6 py-4 text-sm text-gray-600">{staff.department}</td>
