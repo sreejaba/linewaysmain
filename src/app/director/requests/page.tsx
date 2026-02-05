@@ -340,17 +340,15 @@ function AdminRequestManagerContent() {
                                                             <>
                                                                 <button
                                                                     onClick={() => handleAction(leave.id, "Recommended")}
-                                                                    className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
-                                                                    title="Recommend"
+                                                                    className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
                                                                 >
-                                                                    <Check className="h-5 w-5" />
+                                                                    Recommend
                                                                 </button>
                                                                 <button
                                                                     onClick={() => handleAction(leave.id, "Rejected")}
-                                                                    className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
-                                                                    title="Reject"
+                                                                    className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700 transition-colors"
                                                                 >
-                                                                    <X className="h-5 w-5" />
+                                                                    Reject
                                                                 </button>
                                                             </>
                                                         ) : (
