@@ -44,7 +44,7 @@ function AdminRequestManagerContent() {
     // Fetch Staff Details
     useEffect(() => {
         if (!db) return;
-        const q = query(collection(db, "users"), where("role", "in", ["staff", "princi", "dir"])); // Include dir in mapping if needed
+        const q = query(collection(db, "users"), where("role", "in", ["staff", "princi", "dir", "hod"])); // Include dir in mapping if needed
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const mapping: Record<string, any> = {};
             snapshot.docs.forEach(doc => {
